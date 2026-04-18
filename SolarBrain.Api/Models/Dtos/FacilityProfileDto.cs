@@ -13,22 +13,28 @@ namespace SolarBrain.Api.Models.Dtos;
 public class FacilityProfileDto
 {
     /// <summary>"facility" | "farm" | "residential"</summary>
-    [Required]
+    /// <remarks>
+    /// Initialised to null! so missing JSON fields leave the property null
+    /// and [Required] actually triggers a 400. If we defaulted to "facility",
+    /// any caller that forgets userType would silently get a facility design
+    /// (real bug caught by scripts/test-hard.ts, category B).
+    /// </remarks>
+    [Required(AllowEmptyStrings = false, ErrorMessage = "userType is required")]
     [RegularExpression("^(facility|farm|residential)$",
         ErrorMessage = "userType must be one of: facility, farm, residential")]
-    public string UserType { get; set; } = "facility";
+    public string UserType { get; set; } = null!;
 
     /// <summary>"eastern" | "central" | "western"</summary>
-    [Required]
+    [Required(AllowEmptyStrings = false, ErrorMessage = "region is required")]
     [RegularExpression("^(eastern|central|western)$",
         ErrorMessage = "region must be one of: eastern, central, western")]
-    public string Region { get; set; } = "eastern";
+    public string Region { get; set; } = null!;
 
     /// <summary>"on_grid" | "off_grid"  (residential is on_grid only — enforced server-side)</summary>
-    [Required]
+    [Required(AllowEmptyStrings = false, ErrorMessage = "gridScenario is required")]
     [RegularExpression("^(on_grid|off_grid)$",
         ErrorMessage = "gridScenario must be either on_grid or off_grid")]
-    public string GridScenario { get; set; } = "on_grid";
+    public string GridScenario { get; set; } = null!;
 
     [Range(100, 10_000_000, ErrorMessage = "monthlyBillSar must be between 100 and 10,000,000 SAR")]
     public double MonthlyBillSar { get; set; }

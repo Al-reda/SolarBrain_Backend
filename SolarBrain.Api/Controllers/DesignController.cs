@@ -21,6 +21,17 @@ public class DesignController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<DesignController> _log;
 
+    /// <summary>
+    /// Serialises the full dataset-write-then-load sequence. The dataset
+    /// is a single shared file (simulation.csv) and the sim runner is a
+    /// singleton — concurrent /Design submissions would otherwise race
+    /// between generator's flush and runner's re-read, causing partial-
+    /// read CsvHelper exceptions (observed in scripts/test-hard.ts cat D).
+    /// Single-slot semaphore keeps latency predictable: N parallel
+    /// requests cost ~(N × sizing time) instead of crashing.
+    /// </summary>
+    private static readonly SemaphoreSlim _designLock = new(1, 1);
+
     public DesignController(
         ISizingEngine       sizingEngine,
         IDatasetGenerator   datasetGenerator,
@@ -47,6 +58,7 @@ public class DesignController : ControllerBase
     public async Task<ActionResult<DesignResponse>> SubmitProfile(
         [FromBody] FacilityProfileDto profile)
     {
+        await _designLock.WaitAsync();
         try
         {
             _log.LogInformation(
@@ -72,6 +84,10 @@ public class DesignController : ControllerBase
                 Detail = ex.Message,
                 Status = 400,
             });
+        }
+        finally
+        {
+            _designLock.Release();
         }
     }
 

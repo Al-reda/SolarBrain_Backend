@@ -15,6 +15,15 @@ public class DatasetGenerator : IDatasetGenerator
 {
     private readonly ILogger<DatasetGenerator> _log;
 
+    /// <summary>
+    /// Serialises concurrent writes to simulation.csv. Under parallel load
+    /// (scripts/test-hard.ts category D) the unguarded StreamWriter races
+    /// would throw IOException on every concurrent call. A single-slot
+    /// semaphore means second caller waits ~50 ms for the first to finish
+    /// flushing — visible only under stress tests, invisible in demo use.
+    /// </summary>
+    private static readonly SemaphoreSlim _writeLock = new(1, 1);
+
     public DatasetGenerator(ILogger<DatasetGenerator> log) => _log = log;
 
     // ── Constants ─────────────────────────────────────────────────────────
@@ -352,13 +361,21 @@ public class DatasetGenerator : IDatasetGenerator
         }
 
         // ── Write CSV ─────────────────────────────────────────────────────
+        // Guarded by a static semaphore so concurrent /Design submissions
+        // serialise their file writes instead of racing on the same path.
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
         var csvCfg = new CsvConfiguration(CultureInfo.InvariantCulture) { HasHeaderRecord = true };
-        using (var writer = new StreamWriter(outputPath))
-        using (var csv    = new CsvWriter(writer, csvCfg))
+        _writeLock.Wait();
+        try
         {
+            using var writer = new StreamWriter(outputPath);
+            using var csv    = new CsvWriter(writer, csvCfg);
             csv.WriteRecords(rows);
+        }
+        finally
+        {
+            _writeLock.Release();
         }
 
         _log.LogInformation("Dataset generated — {Rows} rows → {Path}", rows.Count, outputPath);
