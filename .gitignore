@@ -1,0 +1,60 @@
+# ════════════════════════════════════════════════════════════════════════════
+# .gitignore — SolarBrain Backend (.NET 9 + EF Core + SQLite)
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── Build artifacts ─────────────────────────────────────────────────────────
+bin/
+obj/
+out/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dll
+*.pdb
+*.exe
+
+# ── Rider / VS Code / Visual Studio ─────────────────────────────────────────
+.vs/
+.idea/
+.vscode/
+*.iml
+
+# ── NuGet ───────────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+.nuget/
+project.lock.json
+project.assets.json
+*.nuget.props
+*.nuget.targets
+
+# ── EF Core local DB + generated data ───────────────────────────────────────
+# The SQLite database gets seeded on startup from Data/components.json, so we
+# don't commit it. Same for the per-design simulation CSV.
+*.db
+*.db-shm
+*.db-wal
+simulation.csv
+
+# ── macOS / Windows cruft ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs and temp ───────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.swp
+TestResults/
+
+# ── EF tools (keep the lock file but not the tool cache) ────────────────────
+# We DO want .config/dotnet-tools.json committed so anyone can restore tools
+!.config/dotnet-tools.json

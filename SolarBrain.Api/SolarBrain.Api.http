@@ -1,0 +1,6 @@
+@SolarBrain.Api_HostAddress = http://localhost:5149
+
+GET {{SolarBrain.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
