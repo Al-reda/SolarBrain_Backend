@@ -24,21 +24,34 @@ builder.Services.AddScoped<IDatasetGenerator, DatasetGenerator>();
 builder.Services.AddSingleton<ISimulationRunner, SimulationRunner>();
 builder.Services.AddSingleton<IDesignStore, DesignStore>();
 
-// CORS — allow any localhost port during dev (5173 dev, 4173 preview, etc.)
+// CORS — allow localhost in dev + deployed frontend via ALLOWED_ORIGINS env var
 const string CorsPolicy = "FrontendDev";
+var allowedOrigins = builder.Configuration["ALLOWED_ORIGINS"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? Array.Empty<string>();
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy(CorsPolicy, p => p
         .SetIsOriginAllowed(origin =>
         {
             var uri = new Uri(origin);
-            return uri.Host is "localhost" or "127.0.0.1";
+            // Always allow localhost for dev
+            if (uri.Host is "localhost" or "127.0.0.1") return true;
+            // Allow any origin listed in ALLOWED_ORIGINS env var
+            return allowedOrigins.Any(ao => origin.StartsWith(ao, StringComparison.OrdinalIgnoreCase));
         })
         .AllowAnyHeader()
         .AllowAnyMethod());
 });
 
 var app = builder.Build();
+
+// Render.com sets PORT env var — bind to 0.0.0.0:$PORT in production
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    app.Urls.Clear();
+    app.Urls.Add($"http://0.0.0.0:{port}");
+}
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 
