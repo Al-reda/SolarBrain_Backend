@@ -24,12 +24,16 @@ builder.Services.AddScoped<IDatasetGenerator, DatasetGenerator>();
 builder.Services.AddSingleton<ISimulationRunner, SimulationRunner>();
 builder.Services.AddSingleton<IDesignStore, DesignStore>();
 
-// CORS — allow the Vite dev server (and any localhost port during dev)
+// CORS — allow any localhost port during dev (5173 dev, 4173 preview, etc.)
 const string CorsPolicy = "FrontendDev";
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy(CorsPolicy, p => p
-        .WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+        .SetIsOriginAllowed(origin =>
+        {
+            var uri = new Uri(origin);
+            return uri.Host is "localhost" or "127.0.0.1";
+        })
         .AllowAnyHeader()
         .AllowAnyMethod());
 });
