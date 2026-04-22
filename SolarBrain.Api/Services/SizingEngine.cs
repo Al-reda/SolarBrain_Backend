@@ -583,9 +583,8 @@ public class SizingEngine : ISizingEngine
 
             double gridSavings = productionKwh * c.Tariff.RateSarKwh;
 
-            // Off-grid: cap savings at baseline cost — can't save more than you'd spend
-            if (c.Profile.GridScenario == "off_grid")
-                gridSavings = Math.Min(gridSavings, annualBaseline);
+            // Cap: savings can't exceed what you actually spend on electricity
+            gridSavings = Math.Min(gridSavings, annualBaseline);
 
             double exportRevenue = 0.0;
             if (c.Profile.GridScenario == "on_grid")
