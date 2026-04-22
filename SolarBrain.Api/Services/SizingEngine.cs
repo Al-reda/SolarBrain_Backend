@@ -67,31 +67,66 @@ public class SizingEngine : ISizingEngine
 
     private SystemDesignDto BuildDesign(SizingContext c)
     {
+        bool isRetrofit = c.Profile.ExistingPvKwp is > 0 && c.Profile.ExistingInverterKw is > 0;
+
         // Step 1 + 2: derive daily load + peak load
         var (dailyLoadKwh, peakLoadKw) = DeriveLoad(c);
         var tier = GetTier(peakLoadKw);
 
-        // Step 3: PV array sizing
+        // Step 3: PV array sizing (skip in retrofit — user provides actual kWp)
         var safetyFactor = c.Profile.GridScenario == "on_grid"
             ? c.Constants.SafetyFactorOnGrid
             : c.Constants.SafetyFactorOffGrid;
-        var pvKwpRequired = Math.Round(
-            (dailyLoadKwh / (c.Region.GhiKwhM2Day * c.Derating.PerformanceRatio)) * safetyFactor, 2);
+        var pvKwpRequired = isRetrofit
+            ? c.Profile.ExistingPvKwp!.Value
+            : Math.Round(
+                (dailyLoadKwh / (c.Region.GhiKwhM2Day * c.Derating.PerformanceRatio)) * safetyFactor, 2);
 
         // Step 4: Battery sizing (user-type-aware)
         var (battKwhRequired, autonomyHours) = SizeBattery(c, peakLoadKw);
 
-        // Step 5: Inverter sizing
-        var invKwRequired = Math.Round(peakLoadKw * c.Constants.InverterOversizeFactor, 2);
+        // Step 5: Inverter sizing (skip in retrofit — user provides actual kW)
+        var invKwRequired = isRetrofit
+            ? c.Profile.ExistingInverterKw!.Value
+            : Math.Round(peakLoadKw * c.Constants.InverterOversizeFactor, 2);
 
         // Step 6: Generator (off-grid only)
         var generatorSpec = BuildGeneratorSpec(c, invKwRequired);
         var generatorKva  = generatorSpec?.Kva ?? 0;
 
-        // Step 7: Component selection (top 3 each)
-        var rankedPanels    = SelectPanels(c, tier, pvKwpRequired);
-        var rankedInverters = SelectInverters(c, tier, invKwRequired);
+        // Step 7: Component selection
+        List<RankedPanelDto> rankedPanels;
+        List<RankedInverterDto> rankedInverters;
         var rankedBatteries = SelectBatteries(c, tier, battKwhRequired);
+
+        if (isRetrofit)
+        {
+            // Create synthetic entries for existing equipment (cost = 0)
+            rankedPanels = new List<RankedPanelDto>
+            {
+                new(RecommendationLabel: "Existing system", Score: 100,
+                    Id: "existing_pv", Brand: "Existing", Model: "User PV array",
+                    Tier: tier, PowerWp: 0, EfficiencyPct: 0, AreaM2: 0,
+                    Type: "existing", WarrantyYears: 0, PriceSar: 0,
+                    TempCoefficientPct: -0.35, GridScenario: c.Profile.GridScenario,
+                    UnitsRequired: 0, ActualKwp: pvKwpRequired,
+                    RoofAreaM2: 0, PanelsCostSar: 0, RoofLimited: false)
+            };
+            rankedInverters = new List<RankedInverterDto>
+            {
+                new(RecommendationLabel: "Existing system", Score: 100,
+                    Id: "existing_inv", Brand: "Existing", Model: "User inverter",
+                    Tier: tier, CapacityKw: invKwRequired, Type: "existing",
+                    EfficiencyPct: 96, WarrantyYears: 0, PriceSar: 0,
+                    MaxPvInputKw: pvKwpRequired, GridScenario: c.Profile.GridScenario,
+                    UnitsRequired: 1, ActualKw: invKwRequired, InverterCostSar: 0)
+            };
+        }
+        else
+        {
+            rankedPanels    = SelectPanels(c, tier, pvKwpRequired);
+            rankedInverters = SelectInverters(c, tier, invKwRequired);
+        }
 
         // Step 8: Protection + BoS (sized to the #1 ranked options)
         var bestPanel    = rankedPanels[0];
@@ -101,20 +136,23 @@ public class SizingEngine : ISizingEngine
         var protectionSummary = BuildProtection(c, tier, bestInverter);
         var bos               = BuildBos(c, bestPanel, bestInverter);
 
-        // Step 9: CAPEX
+        // Step 9: CAPEX — retrofit mode: panel + inverter cost = 0
+        var panelCost    = isRetrofit ? 0 : bestPanel.PanelsCostSar;
+        var inverterCost = isRetrofit ? 0 : bestInverter.InverterCostSar;
         var capex = new CapexBreakdownDto(
-            PanelsSar:     bestPanel.PanelsCostSar,
-            InverterSar:   bestInverter.InverterCostSar,
+            PanelsSar:     panelCost,
+            InverterSar:   inverterCost,
             BatterySar:    bestBattery.BatteryCostSar,
             ProtectionSar: protectionSummary.TotalSar,
             BosSar:        bos.TotalSar,
             TotalSar: Math.Round(
-                bestPanel.PanelsCostSar + bestInverter.InverterCostSar +
+                panelCost + inverterCost +
                 bestBattery.BatteryCostSar + protectionSummary.TotalSar + bos.TotalSar, 2)
         );
 
-        // Step 10: Financials
-        var financials = BuildFinancials(c, bestPanel.ActualKwp, capex.TotalSar, generatorKva);
+        // Step 10: Financials (uses actual PV kWp for production)
+        var arrayKwpForFinancials = isRetrofit ? pvKwpRequired : bestPanel.ActualKwp;
+        var financials = BuildFinancials(c, arrayKwpForFinancials, capex.TotalSar, generatorKva);
 
         return new SystemDesignDto(
             Profile: new ProfileSummaryDto(

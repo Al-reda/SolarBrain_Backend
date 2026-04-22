@@ -56,4 +56,11 @@ public class FacilityProfileDto
     // Off-grid
     public bool    HasGenerator { get; set; } = false;
     [Range(0, 5_000)]      public double? GeneratorKva { get; set; } = 0;
+
+    // ── Battery retrofit mode ────────────────────────────────────────
+    // When both ExistingPvKwp and ExistingInverterKw are provided,
+    // the sizing engine skips panel/inverter selection and only
+    // recommends batteries. CAPEX excludes panel + inverter cost.
+    [Range(0.1, 50_000)]   public double? ExistingPvKwp      { get; set; }
+    [Range(0.1, 50_000)]   public double? ExistingInverterKw  { get; set; }
 }
