@@ -123,7 +123,7 @@
       "type": "N-Type TOPCon",
       "warranty_years": 30,
       "price_sar": 280,
-      "temp_coefficient_pct": -0.30,
+      "temp_coefficient_pct": -0.3,
       "available_sa": true,
       "sec_approved": true,
       "grid_scenario": "both"
@@ -888,17 +888,31 @@
   "regions": {
     "eastern": {
       "name": "Eastern Region",
-      "cities": ["Jubail", "Dammam", "Dhahran", "Al Khobar"],
+      "cities": [
+        "Jubail",
+        "Dammam",
+        "Dhahran",
+        "Al Khobar"
+      ],
       "ghi_kwh_m2_day": 5.9
     },
     "central": {
       "name": "Central Region",
-      "cities": ["Riyadh", "Hail", "Buraydah"],
+      "cities": [
+        "Riyadh",
+        "Hail",
+        "Buraydah"
+      ],
       "ghi_kwh_m2_day": 6.2
     },
     "western": {
       "name": "Western Region",
-      "cities": ["Yanbu", "Jeddah", "Medina", "Mecca"],
+      "cities": [
+        "Yanbu",
+        "Jeddah",
+        "Medina",
+        "Mecca"
+      ],
       "ghi_kwh_m2_day": 5.8
     }
   },
@@ -933,7 +947,7 @@
     "safety_factor_on_grid": 1.2,
     "safety_factor_off_grid": 1.35,
     "autonomy_hours_on_grid": 5,
-    "autonomy_hours_off_grid": 60,
+    "autonomy_hours_off_grid": 12,
     "peak_load_factor": 1.3,
     "inverter_oversize_factor": 1.25,
     "generator_power_factor": 0.8,
@@ -964,12 +978,12 @@
     "ac_disconnect": {
       "description": "AC Disconnect Switch",
       "price_sar_per_unit": 350,
-      "note": "On-grid only — SEC anti-islanding requirement"
+      "note": "On-grid only \u2014 SEC anti-islanding requirement"
     },
     "bidirectional_meter": {
       "description": "Bidirectional Energy Meter with CT",
       "price_sar_per_unit": 1200,
-      "note": "On-grid only — required by SEC for net metering"
+      "note": "On-grid only \u2014 required by SEC for net metering"
     },
     "standalone_meter": {
       "description": "Standalone Energy Meter",
@@ -979,7 +993,7 @@
     "mounting_structure_per_panel": {
       "description": "Panel Mounting Structure",
       "price_sar_per_panel": 85,
-      "note": "Rooftop fixed tilt — per panel"
+      "note": "Rooftop fixed tilt \u2014 per panel"
     },
     "dc_cable_per_meter": {
       "description": "DC Solar Cable 6mm2",

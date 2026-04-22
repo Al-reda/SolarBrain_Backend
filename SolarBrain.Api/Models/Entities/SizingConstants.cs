@@ -14,7 +14,7 @@ public class SizingConstants
     public double SafetyFactorOnGrid          { get; set; } = 1.2;
     public double SafetyFactorOffGrid         { get; set; } = 1.35;
     public double AutonomyHoursOnGrid         { get; set; } = 5;
-    public double AutonomyHoursOffGrid        { get; set; } = 60;
+    public double AutonomyHoursOffGrid        { get; set; } = 12;  // overnight + cloudy margin
     public double PeakLoadFactor              { get; set; } = 1.3;
     public double InverterOversizeFactor      { get; set; } = 1.25;
     public double GeneratorPowerFactor        { get; set; } = 0.8;

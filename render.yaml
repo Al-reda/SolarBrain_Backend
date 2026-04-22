@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: solarbrain-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://frontend-three-delta-74.vercel.app

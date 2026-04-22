@@ -235,11 +235,14 @@ public class SizingEngine : ISizingEngine
             return (batt, 8.0);
         }
 
-        // Facility path — simple autonomy × load
+        // Facility path — autonomy × critical load (not full peak)
         double autonomy = c.Profile.GridScenario == "off_grid"
             ? c.Constants.AutonomyHoursOffGrid
             : c.Constants.AutonomyHoursOnGrid;
-        double facilityBatt = Math.Round(Math.Max(5.0, (peakLoadKw * autonomy) / defaultDod), 2);
+        double loadForBatt = c.Profile.GridScenario == "off_grid"
+            ? peakLoadKw * criticalFraction   // off-grid: only critical loads need autonomy
+            : peakLoadKw;
+        double facilityBatt = Math.Round(Math.Max(5.0, (loadForBatt * autonomy) / defaultDod), 2);
         return (facilityBatt, autonomy);
     }
 
@@ -541,6 +544,10 @@ public class SizingEngine : ISizingEngine
                                    * c.Derating.PerformanceRatio * degFactor;
 
             double gridSavings = productionKwh * c.Tariff.RateSarKwh;
+
+            // Off-grid: cap savings at baseline cost — can't save more than you'd spend
+            if (c.Profile.GridScenario == "off_grid")
+                gridSavings = Math.Min(gridSavings, annualBaseline);
 
             double exportRevenue = 0.0;
             if (c.Profile.GridScenario == "on_grid")
