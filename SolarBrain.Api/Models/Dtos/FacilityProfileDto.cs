@@ -63,4 +63,10 @@ public class FacilityProfileDto
     // recommends batteries. CAPEX excludes panel + inverter cost.
     [Range(0.1, 50_000)]   public double? ExistingPvKwp      { get; set; }
     [Range(0.1, 50_000)]   public double? ExistingInverterKw  { get; set; }
+
+    // ── No battery mode ──────────────────────────────────────────────
+    // When true, the sizing engine skips battery selection entirely.
+    // CAPEX excludes battery cost. Useful for grid-connected systems
+    // where the user doesn't want energy storage.
+    public bool NoBattery { get; set; } = false;
 }

@@ -97,7 +97,26 @@ public class SizingEngine : ISizingEngine
         // Step 7: Component selection
         List<RankedPanelDto> rankedPanels;
         List<RankedInverterDto> rankedInverters;
-        var rankedBatteries = SelectBatteries(c, tier, battKwhRequired);
+        List<RankedBatteryDto> rankedBatteries;
+
+        bool noBattery = c.Profile.NoBattery;
+
+        if (noBattery)
+        {
+            rankedBatteries = new List<RankedBatteryDto>
+            {
+                new(RecommendationLabel: "No battery", Score: 0,
+                    Id: "no_battery", Brand: "None", Model: "No battery selected",
+                    Tier: tier, CapacityKwh: 0, Chemistry: "N/A", CycleLife: 0,
+                    DodPct: 0, WarrantyYears: 0, PriceSar: 0,
+                    GridScenario: c.Profile.GridScenario,
+                    UnitsRequired: 0, ActualKwh: 0, FloorSocPct: 0, BatteryCostSar: 0)
+            };
+        }
+        else
+        {
+            rankedBatteries = SelectBatteries(c, tier, battKwhRequired);
+        }
 
         if (isRetrofit)
         {
