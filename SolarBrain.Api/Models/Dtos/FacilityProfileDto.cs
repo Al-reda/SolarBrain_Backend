@@ -52,6 +52,11 @@ public class FacilityProfileDto
 
     // Residential-specific
     [Range(0, 50)]         public int? AcUnits { get; set; }
+    /// <summary>"split" (1.5–3.5 kW each) or "central" (3.5–5 kW ducted unit)</summary>
+    [RegularExpression("^(split|central)$")]
+    public string? AcType { get; set; } = "split";
+    /// <summary>Average daily AC runtime hours (default: 14 for Saudi climate)</summary>
+    [Range(1, 24)]         public double? AcHoursDay { get; set; }
 
     // Off-grid
     public bool    HasGenerator { get; set; } = false;

@@ -208,14 +208,35 @@ public class SizingEngine : ISizingEngine
 
         if (c.Profile.UserType == "residential")
         {
-            // Residential: lower coincidence factor + AC-derived peak when available
+            // Residential: AC-driven load model for Saudi Arabia
             dailyLoadKwh = (bill / rate) / 30.0;
             if (c.Profile.AcUnits is int acUnits && acUnits > 0)
             {
-                double acKw = acUnits * 2.5 * 0.70;     // 0.70 coincidence factor
-                double baseKw = 1.5 + (0.3 * acUnits);
-                peakLoadKw = Math.Round(Math.Clamp(acKw + baseKw, 2.0, 30.0), 1);
-                dailyLoadKwh = Math.Round(peakLoadKw * 24 * 0.50, 1);
+                // AC power depends on type:
+                //   split (wall-mounted):  2.5 kW per unit (typical 18,000–24,000 BTU)
+                //   central (ducted):      4.5 kW per unit (typical 36,000–48,000 BTU)
+                bool isCentral = c.Profile.AcType == "central";
+                double kwPerAc = isCentral ? 4.5 : 2.5;
+
+                // Saudi coincidence factor: in summer, most ACs run simultaneously
+                // during 12pm–6pm peak. Central systems have higher coincidence (0.85)
+                // because they serve the whole house; splits may not all be on (0.75).
+                double coincidence = isCentral ? 0.85 : 0.75;
+                double acKw = acUnits * kwPerAc * coincidence;
+
+                // Base (non-AC) household load: lighting, appliances, water heater
+                double baseKw = 2.0 + (0.4 * acUnits);  // more AC = larger house
+
+                peakLoadKw = Math.Round(Math.Clamp(acKw + baseKw, 2.0, 60.0), 1);
+
+                // Daily energy: AC runs heavily in Saudi climate
+                // Default 14 hours/day (6am–8pm in summer, less in winter → average 14)
+                double acHours = c.Profile.AcHoursDay ?? 14.0;
+                // AC duty cycle: 70% average (compressor cycles on/off)
+                double acDutyCycle = 0.70;
+                double acDailyKwh = acUnits * kwPerAc * acHours * acDutyCycle;
+                double baseDailyKwh = baseKw * 18.0;  // base loads ~18 hrs/day
+                dailyLoadKwh = Math.Round(acDailyKwh + baseDailyKwh, 1);
             }
             else
             {
